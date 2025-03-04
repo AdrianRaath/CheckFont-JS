@@ -6,7 +6,20 @@ document.addEventListener("DOMContentLoaded", () => {
   hiddenFileInput.style.display = "none";
   document.body.appendChild(hiddenFileInput);
 
-  // 2) Function to read a file and apply it as background to a user-image container
+  // Helper to toggle the parent's "has-image" class
+  function toggleParentImageState(container, hasImage) {
+    // Find the nearest [color-adapts] parent
+    const colorAdaptsParent = container.closest("[color-adapts]");
+    if (!colorAdaptsParent) return;
+
+    if (hasImage) {
+      colorAdaptsParent.classList.add("has-image");
+    } else {
+      colorAdaptsParent.classList.remove("has-image");
+    }
+  }
+
+  // 2) Function to read a file and apply it as background to a [user-image] container
   function applyImageToContainer(file, container, deleteBtn) {
     if (!file || !file.type.startsWith("image/")) return;
 
@@ -19,6 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Show the delete button
       if (deleteBtn) deleteBtn.style.display = "flex";
+
+      // *** Mark the [color-adapts] parent so ::after / .preview_image-icon go to opacity: 0
+      toggleParentImageState(container, true);
     };
     reader.readAsDataURL(file);
   }
@@ -36,34 +52,35 @@ document.addEventListener("DOMContentLoaded", () => {
     // Hide delete btn by default
     if (deleteBtn) {
       deleteBtn.style.display = "none";
-      // Delete -> remove background + hide button
+      // Delete -> remove background + hide button + revert parent's state
       deleteBtn.addEventListener("click", () => {
         userImageEl.style.backgroundImage = "none";
         deleteBtn.style.display = "none";
+
+        // Revert parent's state
+        toggleParentImageState(userImageEl, false);
       });
     }
 
-    // A) Existing "Upload Image" button logic
+    // A) "Upload Image" button logic
     if (uploadBtn) {
       uploadBtn.addEventListener("click", () => {
-        // On file input change
         hiddenFileInput.onchange = (e) => {
           const file = e.target.files[0];
           applyImageToContainer(file, userImageEl, deleteBtn);
-          hiddenFileInput.value = ""; // reset so user can pick same file again if desired
+          hiddenFileInput.value = ""; // reset so user can pick same file again
         };
         hiddenFileInput.click(); // open the file picker
       });
     }
 
     // B) Drag & Drop logic for the userImageEl
-    //  - highlight on dragover, read file on drop
     userImageEl.addEventListener("dragover", (e) => {
       e.preventDefault(); // allow drop
       userImageEl.classList.add("dragover");
     });
 
-    userImageEl.addEventListener("dragleave", (e) => {
+    userImageEl.addEventListener("dragleave", () => {
       userImageEl.classList.remove("dragover");
     });
 
